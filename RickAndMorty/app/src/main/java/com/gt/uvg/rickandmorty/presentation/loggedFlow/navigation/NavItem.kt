@@ -16,7 +16,7 @@ data class NavItem(
     val title: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
-    val destination: Any, // Utilizamos Any ya que debemos poner aquí nuestros Destinations
+    val destination: LoggedFlowRoutes,
 )
 
 val navigationItems = listOf(
@@ -38,10 +38,4 @@ val navigationItems = listOf(
         unselectedIcon = Icons.Outlined.Person,
         destination = LoggedFlowRoutes.Profile
     )
-)
-
-val topLevelDestinations = listOf(
-    CharacterRoutes.CharacterList::class,
-    LocationRoutes.LocationList::class,
-    LoggedFlowRoutes.Profile::class
 )
