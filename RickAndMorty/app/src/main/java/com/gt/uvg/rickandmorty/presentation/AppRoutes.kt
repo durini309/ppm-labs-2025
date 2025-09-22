@@ -4,13 +4,8 @@ import kotlinx.serialization.Serializable
 
 sealed interface AppRoutes {
     @Serializable
-    object Login : AppRoutes
+    data object Login : AppRoutes
 
     @Serializable
-    object Characters : AppRoutes
-
-    @Serializable
-    data class CharacterProfile(
-        val id: Int
-    ) : AppRoutes
+    data object LoggedFlow: AppRoutes
 }

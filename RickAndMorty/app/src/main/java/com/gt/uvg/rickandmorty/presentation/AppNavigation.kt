@@ -4,8 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.gt.uvg.rickandmorty.presentation.characterFeature.list.characterListRoute
-import com.gt.uvg.rickandmorty.presentation.characterFeature.profile.characterProfileRoute
+import com.gt.uvg.rickandmorty.presentation.loggedFlow.loggedFlowRoute
 import com.gt.uvg.rickandmorty.presentation.loginFeature.loginRoute
 
 @Composable
@@ -20,21 +19,15 @@ fun AppNavigation(
     ) {
         loginRoute(
             onLoginClick = {
-                navController.navigate(AppRoutes.Characters)
+                navController.navigate(AppRoutes.LoggedFlow)
             }
         )
 
-        characterListRoute(
-            onCharacterClick = { characterId ->
-                navController.navigate(
-                    AppRoutes.CharacterProfile(id = characterId)
-                )
-            }
-        )
-
-        characterProfileRoute(
-            onNavigateBack = {
-                navController.popBackStack()
+        loggedFlowRoute(
+            onLogOutClick = {
+                navController.navigate(AppRoutes.Login) {
+                    popUpTo(0)
+                }
             }
         )
     }

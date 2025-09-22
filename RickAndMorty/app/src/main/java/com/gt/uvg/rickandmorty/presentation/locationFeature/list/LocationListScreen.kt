@@ -1,24 +1,18 @@
-package com.gt.uvg.rickandmorty.presentation.characterFeature.list
+package com.gt.uvg.rickandmorty.presentation.locationFeature.list
 
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -32,16 +26,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.gt.uvg.rickandmorty.data.CharacterDb
-import com.gt.uvg.rickandmorty.presentation.characterFeature.CharacterRoutes
-import com.gt.uvg.rickandmorty.presentation.model.CharacterUi
+import com.gt.uvg.rickandmorty.data.LocationDb
+import com.gt.uvg.rickandmorty.presentation.locationFeature.LocationRoutes
+import com.gt.uvg.rickandmorty.presentation.model.Location
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CharacterListScreen(
-    characters: List<CharacterUi>,
-    onCharacterClick: (Int) -> Unit,
+private fun LocationListScreen(
+    locations: List<Location>,
+    onLocationClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -50,7 +44,7 @@ private fun CharacterListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Characters")
+                    Text("Locations")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -58,15 +52,16 @@ private fun CharacterListScreen(
             )
         }
     ) {
+
         LazyColumn(
             modifier = Modifier.padding(it)
         ) {
-            items(characters) { item ->
-                CharacterItem(
-                    character = item,
+            items(locations) { item ->
+                LocationItem(
+                    location = item,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onCharacterClick(item.id) }
+                        .clickable { onLocationClick(item.id) }
                 )
             }
         }
@@ -74,8 +69,8 @@ private fun CharacterListScreen(
 }
 
 @Composable
-private fun CharacterItem(
-    character: CharacterUi,
+private fun LocationItem(
+    location: Location,
     modifier: Modifier = Modifier
 ) {
     val imageBackgroundColors = listOf(
@@ -93,37 +88,25 @@ private fun CharacterItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            color = imageBackgroundColors.random(),
-            shape = CircleShape
-        ) {
-            Box {
-                Icon(
-                    Icons.Outlined.Person, contentDescription = "Image",
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-        }
         Column {
-            Text(text = character.name)
+            Text(text = location.name)
             Text(
-                text = "${character.species} * ${character.status}",
+                text = location.type,
                 style = MaterialTheme.typography.labelSmall
             )
         }
     }
 }
 
-fun NavGraphBuilder.characterListRoute(
-    onCharacterClick: (Int) -> Unit,
+fun NavGraphBuilder.locationsListRoute(
+    onLocationClick: (Int) -> Unit,
 ) {
-    composable<CharacterRoutes.CharacterList> {
-        val characterDb = CharacterDb()
-        val characters = characterDb.getAllCharacters()
-        CharacterListScreen(
-            characters = characters,
-            onCharacterClick = onCharacterClick,
+    composable<LocationRoutes.LocationList> {
+        val locationDb = LocationDb()
+        val locations = locationDb.getAllLocations()
+        LocationListScreen(
+            locations = locations,
+            onLocationClick = onLocationClick,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -132,13 +115,13 @@ fun NavGraphBuilder.characterListRoute(
 @Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PreviewCharacterListScreen() {
+private fun PreviewLocationListScreen() {
     RickAndMortyTheme {
         Surface {
-            val db = CharacterDb()
-            CharacterListScreen(
-                characters = db.getAllCharacters(),
-                onCharacterClick = {},
+            val locationDb = LocationDb()
+            LocationListScreen(
+                locations = locationDb.getAllLocations(),
+                onLocationClick = {},
                 modifier = Modifier.fillMaxSize()
             )
         }

@@ -35,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.gt.uvg.rickandmorty.data.CharacterDb
 import com.gt.uvg.rickandmorty.presentation.AppRoutes
+import com.gt.uvg.rickandmorty.presentation.characterFeature.CharacterRoutes
 import com.gt.uvg.rickandmorty.presentation.model.CharacterUi
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
 
@@ -58,7 +59,7 @@ private fun CharacterProfileScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 )
             )
         }
@@ -133,8 +134,8 @@ private fun CharacterProfilePropItem(
 fun NavGraphBuilder.characterProfileRoute(
     onNavigateBack: () -> Unit
 ) {
-    composable<AppRoutes.CharacterProfile> { backstackEntry ->
-        val route: AppRoutes.CharacterProfile = backstackEntry.toRoute()
+    composable<CharacterRoutes.CharacterProfile> { backstackEntry ->
+        val route: CharacterRoutes.CharacterProfile = backstackEntry.toRoute()
 
         val characterDb = CharacterDb()
         val character = characterDb.getCharacterById(route.id)
