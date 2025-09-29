@@ -26,22 +26,47 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.gt.uvg.rickandmorty.data.CharacterDb
 import com.gt.uvg.rickandmorty.presentation.characterFeature.CharacterRoutes
+import com.gt.uvg.rickandmorty.presentation.components.ErrorLayout
+import com.gt.uvg.rickandmorty.presentation.components.LoadingLayout
 import com.gt.uvg.rickandmorty.presentation.model.CharacterUi
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
+
+fun NavGraphBuilder.characterListRoute(
+    onCharacterClick: (Int) -> Unit,
+) {
+    composable<CharacterRoutes.CharacterList> {
+        val viewModel: CharactersViewModel = viewModel()
+        val state by viewModel.state.collectAsStateWithLifecycle()
+        CharacterListScreen(
+            isLoading = state.isLoading,
+            isError = state.isError,
+            characters = state.data,
+            onRetryClick = viewModel::fetchData,
+            onCharacterClick = onCharacterClick,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CharacterListScreen(
+    isLoading: Boolean,
+    isError: Boolean,
     characters: List<CharacterUi>,
     onCharacterClick: (Int) -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -58,17 +83,38 @@ private fun CharacterListScreen(
             )
         }
     ) {
-        LazyColumn(
-            modifier = Modifier.padding(it)
-        ) {
-            items(characters) { item ->
-                CharacterItem(
-                    character = item,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onCharacterClick(item.id) }
-                )
-            }
+        when {
+            isLoading -> LoadingLayout(
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+            isError -> ErrorLayout(
+                modifier = Modifier.fillMaxSize().padding(it),
+                onRetryClick = onRetryClick
+            )
+            else -> CharacterListSuccessState(
+                characters = characters,
+                onCharacterClick = onCharacterClick,
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+        }
+    }
+}
+@Composable
+private fun CharacterListSuccessState(
+    characters: List<CharacterUi>,
+    onCharacterClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+    ) {
+        items(characters) { item ->
+            CharacterItem(
+                character = item,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCharacterClick(item.id) }
+            )
         }
     }
 }
@@ -115,30 +161,52 @@ private fun CharacterItem(
     }
 }
 
-fun NavGraphBuilder.characterListRoute(
-    onCharacterClick: (Int) -> Unit,
-) {
-    composable<CharacterRoutes.CharacterList> {
-        val characterDb = CharacterDb()
-        val characters = characterDb.getAllCharacters()
-        CharacterListScreen(
-            characters = characters,
-            onCharacterClick = onCharacterClick,
-            modifier = Modifier.fillMaxSize()
-        )
+@Preview
+@Composable
+private fun PreviewCharacterListScreen_LoadingState() {
+    RickAndMortyTheme {
+        Surface {
+            CharacterListScreen(
+                isLoading = true,
+                isError = false,
+                characters = listOf(),
+                onCharacterClick = {},
+                onRetryClick = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
 @Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PreviewCharacterListScreen() {
+private fun PreviewCharacterListScreen_ErrorState() {
+    RickAndMortyTheme {
+        Surface {
+            CharacterListScreen(
+                isLoading = false,
+                isError = true,
+                characters = listOf(),
+                onCharacterClick = {},
+                onRetryClick = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewCharacterListScreen_SuccessState() {
     RickAndMortyTheme {
         Surface {
             val db = CharacterDb()
             CharacterListScreen(
+                isLoading = false,
+                isError = false,
                 characters = db.getAllCharacters(),
                 onCharacterClick = {},
+                onRetryClick = {},
                 modifier = Modifier.fillMaxSize()
             )
         }

@@ -20,13 +20,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.gt.uvg.rickandmorty.data.LocationDb
+import com.gt.uvg.rickandmorty.presentation.components.ErrorLayout
+import com.gt.uvg.rickandmorty.presentation.components.LoadingLayout
 import com.gt.uvg.rickandmorty.presentation.locationFeature.LocationRoutes
 import com.gt.uvg.rickandmorty.presentation.model.Location
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
@@ -34,8 +39,11 @@ import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LocationListScreen(
+    isLoading: Boolean,
+    isError: Boolean,
     locations: List<Location>,
     onLocationClick: (Int) -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -52,18 +60,39 @@ private fun LocationListScreen(
             )
         }
     ) {
+        when {
+            isLoading -> LoadingLayout(
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+            isError -> ErrorLayout(
+                modifier = Modifier.fillMaxSize().padding(it),
+                onRetryClick = onRetryClick
+            )
+            else -> LocationListSuccessState(
+                locations = locations,
+                onLocationClick = onLocationClick,
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+        }
+    }
+}
 
-        LazyColumn(
-            modifier = Modifier.padding(it)
-        ) {
-            items(locations) { item ->
-                LocationItem(
-                    location = item,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onLocationClick(item.id) }
-                )
-            }
+@Composable
+private fun LocationListSuccessState(
+    locations: List<Location>,
+    onLocationClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+    ) {
+        items(locations) { item ->
+            LocationItem(
+                location = item,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onLocationClick(item.id) }
+            )
         }
     }
 }
@@ -102,26 +131,66 @@ fun NavGraphBuilder.locationsListRoute(
     onLocationClick: (Int) -> Unit,
 ) {
     composable<LocationRoutes.LocationList> {
-        val locationDb = LocationDb()
-        val locations = locationDb.getAllLocations()
+        val viewModel: LocationListViewModel = viewModel()
+        val state by viewModel.state.collectAsStateWithLifecycle()
         LocationListScreen(
-            locations = locations,
+            isLoading = state.isLoading,
+            isError = state.isError,
+            locations = state.data,
             onLocationClick = onLocationClick,
+            onRetryClick = viewModel::fetchData,
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
 @Preview
+@Composable
+private fun PreviewLocationListScreen_LoadingState() {
+    RickAndMortyTheme {
+        Surface {
+            LocationListScreen(
+                isLoading = true,
+                isError = false,
+                locations = listOf(),
+                onLocationClick = {},
+                onRetryClick = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewLocationListScreen_ErrorState() {
+    RickAndMortyTheme {
+        Surface {
+            LocationListScreen(
+                isLoading = false,
+                isError = true,
+                locations = listOf(),
+                onLocationClick = {},
+                onRetryClick = {},
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PreviewLocationListScreen() {
+private fun PreviewLocationListScreen_SuccessState() {
     RickAndMortyTheme {
         Surface {
             val locationDb = LocationDb()
             LocationListScreen(
+                isLoading = false,
+                isError = false,
                 locations = locationDb.getAllLocations(),
                 onLocationClick = {},
+                onRetryClick = {},
                 modifier = Modifier.fillMaxSize()
             )
         }

@@ -23,14 +23,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.gt.uvg.rickandmorty.data.LocationDb
+import com.gt.uvg.rickandmorty.presentation.components.ErrorLayout
+import com.gt.uvg.rickandmorty.presentation.components.LoadingLayout
 import com.gt.uvg.rickandmorty.presentation.locationFeature.LocationRoutes
 import com.gt.uvg.rickandmorty.presentation.model.Location
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
@@ -38,8 +43,11 @@ import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LocationProfileScreen(
-    location: Location,
+    isLoading: Boolean,
+    isError: Boolean,
+    location: Location?,
     onNavigateBack: () -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -61,36 +69,55 @@ private fun LocationProfileScreen(
             )
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(it)
-                .padding(horizontal = 64.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = location.name,
-                style = MaterialTheme.typography.titleLarge
+        when {
+            isLoading -> LoadingLayout(
+                modifier = Modifier.fillMaxSize().padding(it)
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            LocationProfilePropItem(
-                title = "ID:",
-                value = location.id.toString(),
-                modifier = Modifier.fillMaxWidth()
+            isError -> ErrorLayout(
+                modifier = Modifier.fillMaxSize().padding(it),
+                onRetryClick = onRetryClick
             )
-            LocationProfilePropItem(
-                title = "Type:",
-                value = location.type,
-                modifier = Modifier.fillMaxWidth()
-            )
-            LocationProfilePropItem(
-                title = "Dimensions:",
-                value = location.dimension,
-                modifier = Modifier.fillMaxWidth()
+            location != null -> LocationProfileSuccessState(
+                location = location,
+                modifier = Modifier.fillMaxSize().padding(it)
             )
         }
+    }
+}
+
+@Composable
+private fun LocationProfileSuccessState(
+    location: Location,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = location.name,
+            style = MaterialTheme.typography.titleLarge
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        LocationProfilePropItem(
+            title = "ID:",
+            value = location.id.toString(),
+            modifier = Modifier.fillMaxWidth()
+        )
+        LocationProfilePropItem(
+            title = "Type:",
+            value = location.type,
+            modifier = Modifier.fillMaxWidth()
+        )
+        LocationProfilePropItem(
+            title = "Dimensions:",
+            value = location.dimension,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -114,24 +141,66 @@ fun NavGraphBuilder.locationProfileRoute(
 ) {
     composable<LocationRoutes.LocationDetail> { backStackEntry ->
         val route: LocationRoutes.LocationDetail = backStackEntry.toRoute()
-        val locationDb = LocationDb()
-        val location = locationDb.getLocationById(route.id)
+        val viewModel: LocationProfileViewModel = viewModel { LocationProfileViewModel(route.id) }
+        val state by viewModel.state.collectAsStateWithLifecycle()
+
         LocationProfileScreen(
-            location = location,
-            onNavigateBack = onNavigateBack
+            isLoading = state.isLoading,
+            isError = state.isError,
+            location = state.data,
+            onNavigateBack = onNavigateBack,
+            onRetryClick = viewModel::fetchData,
+            modifier = Modifier.fillMaxSize()
         )
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewLocationProfileScreen_LoadingState() {
+    RickAndMortyTheme {
+        Surface {
+            LocationProfileScreen(
+                isLoading = true,
+                isError = false,
+                location = null,
+                onNavigateBack = { },
+                onRetryClick = { },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewLocationProfileScreen_ErrorState() {
+    RickAndMortyTheme {
+        Surface {
+            LocationProfileScreen(
+                isLoading = false,
+                isError = true,
+                location = null,
+                onNavigateBack = { },
+                onRetryClick = { },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
 @Preview
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PreviewLocationProfileScreen() {
-    RickAndMortyTheme() {
+private fun PreviewLocationProfileScreen_SuccessState() {
+    RickAndMortyTheme {
         Surface {
             LocationProfileScreen(
+                isLoading = false,
+                isError = false,
                 location = Location(1, "Earth (C-137)", "Planet", "Dimension C-137"),
                 onNavigateBack = { },
+                onRetryClick = { },
                 modifier = Modifier.fillMaxSize()
             )
         }

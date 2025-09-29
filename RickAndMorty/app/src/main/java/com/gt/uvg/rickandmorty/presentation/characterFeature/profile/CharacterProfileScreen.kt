@@ -26,24 +26,32 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.gt.uvg.rickandmorty.data.CharacterDb
 import com.gt.uvg.rickandmorty.presentation.AppRoutes
 import com.gt.uvg.rickandmorty.presentation.characterFeature.CharacterRoutes
+import com.gt.uvg.rickandmorty.presentation.components.ErrorLayout
+import com.gt.uvg.rickandmorty.presentation.components.LoadingLayout
 import com.gt.uvg.rickandmorty.presentation.model.CharacterUi
 import com.gt.uvg.rickandmorty.ui.theme.RickAndMortyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CharacterProfileScreen(
-    character: CharacterUi,
+    isLoading: Boolean,
+    isError: Boolean,
+    character: CharacterUi?,
     onNavigateBack: () -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -64,55 +72,74 @@ private fun CharacterProfileScreen(
             )
         }
     ) {
+        when {
+            isLoading -> LoadingLayout(
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+            isError -> ErrorLayout(
+                modifier = Modifier.fillMaxSize().padding(it),
+                onRetryClick = onRetryClick
+            )
+            character != null -> CharacterProfileSuccessState(
+                character = character,
+                modifier = Modifier.fillMaxSize().padding(it)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CharacterProfileSuccessState(
+    character: CharacterUi,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+    ) {
         Column(
-            modifier = Modifier.padding(it)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Column(
+            Spacer(modifier = Modifier.height(16.dp))
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 64.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .size(200.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape)
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
+                Icon(
+                    Icons.Outlined.Person,
+                    contentDescription = "Person",
                     modifier = Modifier
-                        .size(200.dp)
-                        .background(MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape)
-                ) {
-                    Icon(
-                        Icons.Outlined.Person,
-                        contentDescription = "Person",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = character.name,
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                CharacterProfilePropItem(
-                    title = "Species:",
-                    value = character.species,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                CharacterProfilePropItem(
-                    title = "Status:",
-                    value = character.status,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                CharacterProfilePropItem(
-                    title = "Gender:",
-                    value = character.gender,
-                    modifier = Modifier.fillMaxWidth()
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = character.name,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            CharacterProfilePropItem(
+                title = "Species:",
+                value = character.species,
+                modifier = Modifier.fillMaxWidth()
+            )
+            CharacterProfilePropItem(
+                title = "Status:",
+                value = character.status,
+                modifier = Modifier.fillMaxWidth()
+            )
+            CharacterProfilePropItem(
+                title = "Gender:",
+                value = character.gender,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-
     }
 }
 
@@ -136,24 +163,63 @@ fun NavGraphBuilder.characterProfileRoute(
 ) {
     composable<CharacterRoutes.CharacterProfile> { backstackEntry ->
         val route: CharacterRoutes.CharacterProfile = backstackEntry.toRoute()
+        val viewModel: CharacterProfileViewModel = viewModel { CharacterProfileViewModel(route.id) }
+        val state by viewModel.state.collectAsStateWithLifecycle()
 
-        val characterDb = CharacterDb()
-        val character = characterDb.getCharacterById(route.id)
         CharacterProfileScreen(
-            character = character,
+            isLoading = state.isLoading,
+            isError = state.isError,
+            character = state.data,
             onNavigateBack = onNavigateBack,
+            onRetryClick = viewModel::fetchData,
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
 @Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun PreviewCharacterProfileScreen() {
+private fun PreviewCharacterProfileScreen_LoadingState() {
     RickAndMortyTheme {
         Surface {
             CharacterProfileScreen(
+                isLoading = true,
+                isError = false,
+                character = null,
+                onNavigateBack = { },
+                onRetryClick = { },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewCharacterProfileScreen_ErrorState() {
+    RickAndMortyTheme {
+        Surface {
+            CharacterProfileScreen(
+                isLoading = false,
+                isError = true,
+                character = null,
+                onNavigateBack = { },
+                onRetryClick = { },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun PreviewCharacterProfileScreen_SuccessState() {
+    RickAndMortyTheme {
+        Surface {
+            CharacterProfileScreen(
+                isLoading = false,
+                isError = false,
                 character = CharacterUi(
                     id = 2565,
                     name = "Rick",
@@ -161,9 +227,9 @@ private fun PreviewCharacterProfileScreen() {
                     species = "Human",
                     gender = "Male",
                     image = ""
-
                 ),
                 onNavigateBack = { },
+                onRetryClick = { },
                 modifier = Modifier.fillMaxSize()
             )
         }
